@@ -68,7 +68,6 @@ Enum values from MessageSenderRole:
 class ConversationMetaRequest(BaseModel):
     """Conversation metadata request (internal use)"""
 
-    version: str  # Version number
     scene: str  # Scene identifier
     scene_desc: Dict[
         str, Any
@@ -98,7 +97,6 @@ class ConversationMetaCreateRequest(BaseModel):
     Used for POST /api/v1/memories/conversation-meta endpoint
     """
 
-    version: str = Field(..., description="Metadata version number", examples=["1.0"])
     scene: str = Field(
         ...,
         description="""Scene identifier, enum values from ScenarioType:
@@ -167,7 +165,6 @@ class ConversationMetaCreateRequest(BaseModel):
                 {
                     "summary": "With group_id",
                     "value": {
-                        "version": "1.0",
                         "scene": "group_chat",
                         "scene_desc": {
                             "description": "Project discussion group chat",
@@ -196,7 +193,6 @@ class ConversationMetaCreateRequest(BaseModel):
                 {
                     "summary": "Default config (group_id is null)",
                     "value": {
-                        "version": "1.0",
                         "scene": "group_chat",
                         "scene_desc": {
                             "description": "Default conversation meta config"
@@ -254,7 +250,6 @@ class ConversationMetaResponse(BaseModel):
     description: Optional[str] = Field(
         default=None, description="Conversation description"
     )
-    version: str = Field(..., description="Metadata version")
     conversation_created_at: str = Field(..., description="Conversation creation time")
     default_timezone: Optional[str] = Field(
         default=None, description="Default timezone"
@@ -278,7 +273,6 @@ class ConversationMetaResponse(BaseModel):
                 "scene_desc": {"description": "Project discussion group chat"},
                 "name": "Project Discussion",
                 "description": "Technical discussion group",
-                "version": "1.0",
                 "conversation_created_at": "2025-01-15T10:00:00+00:00",
                 "default_timezone": "UTC",
                 "user_details": {
@@ -322,7 +316,6 @@ class GetConversationMetaResponse(BaseApiResponse[ConversationMetaResponse]):
                                 "description": "Project discussion group chat"
                             },
                             "name": "Project Discussion",
-                            "version": "1.0",
                             "conversation_created_at": "2025-01-15T10:00:00+00:00",
                             "is_default": False,
                         },
@@ -341,7 +334,6 @@ class GetConversationMetaResponse(BaseApiResponse[ConversationMetaResponse]):
                                 "description": "Default conversation meta config"
                             },
                             "name": "Default Settings",
-                            "version": "1.0",
                             "conversation_created_at": "2025-01-15T10:00:00+00:00",
                             "is_default": True,
                         },
@@ -371,7 +363,6 @@ class SaveConversationMetaResponse(BaseApiResponse[ConversationMetaResponse]):
                     "scene": "group_chat",
                     "scene_desc": {"description": "Project discussion group chat"},
                     "name": "Project Discussion",
-                    "version": "1.0",
                     "conversation_created_at": "2025-01-15T10:00:00+00:00",
                     "is_default": False,
                 },

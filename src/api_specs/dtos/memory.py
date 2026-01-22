@@ -296,7 +296,10 @@ class MemorizeMessageRequest(BaseModel):
     """
 
     group_id: Optional[str] = Field(
-        default=None, description="Group ID", examples=["group_123"]
+        default=None,
+        description="Group ID. If not provided, will automatically generate based on hash(sender) + '_group' suffix, "
+        "representing single-user mode where each user's messages are extracted into separate memory spaces.",
+        examples=["group_123"],
     )
     group_name: Optional[str] = Field(
         default=None, description="Group name", examples=["Project Discussion Group"]
@@ -309,7 +312,11 @@ class MemorizeMessageRequest(BaseModel):
         description="Message creation time (ISO 8601 format)",
         examples=["2025-01-15T10:00:00+00:00"],
     )
-    sender: str = Field(..., description="Sender user ID", examples=["user_001"])
+    sender: str = Field(
+        ...,
+        description="Sender user ID (required). Also used as user_id internally for memory ownership.",
+        examples=["user_001"],
+    )
     sender_name: Optional[str] = Field(
         default=None,
         description="Sender name (uses sender if not provided)",
@@ -345,17 +352,33 @@ Enum values from MessageSenderRole:
 
     model_config = {
         "json_schema_extra": {
-            "example": {
-                "group_id": "group_123",
-                "group_name": "Project Discussion Group",
-                "message_id": "msg_001",
-                "create_time": "2025-01-15T10:00:00+00:00",
-                "sender": "user_001",
-                "sender_name": "John",
-                "role": "user",
-                "content": "Let's discuss the technical solution for the new feature today",
-                "refer_list": ["msg_000"],
-            }
+            "examples": [
+                {
+                    "summary": "With explicit group_id (multi-user group mode)",
+                    "value": {
+                        "group_id": "group_123",
+                        "group_name": "Project Discussion Group",
+                        "message_id": "msg_001",
+                        "create_time": "2025-01-15T10:00:00+00:00",
+                        "sender": "user_001",
+                        "sender_name": "John",
+                        "role": "user",
+                        "content": "Let's discuss the technical solution for the new feature today",
+                        "refer_list": ["msg_000"],
+                    },
+                },
+                {
+                    "summary": "Without group_id (single-user mode, auto-generated)",
+                    "value": {
+                        "message_id": "msg_002",
+                        "create_time": "2025-01-15T10:05:00+00:00",
+                        "sender": "user_001",
+                        "sender_name": "John",
+                        "role": "user",
+                        "content": "What's the weather like today?",
+                    },
+                },
+            ]
         }
     }
 

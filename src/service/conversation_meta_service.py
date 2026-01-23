@@ -64,7 +64,6 @@ class ConversationMetaService:
             scene_desc=meta.scene_desc,
             name=meta.name,
             description=meta.description,
-            version=meta.version,
             conversation_created_at=meta.conversation_created_at,
             default_timezone=meta.default_timezone,
             user_details={
@@ -134,7 +133,6 @@ class ConversationMetaService:
         saved_meta = await repo.upsert_by_group_id(
             group_id=request.group_id,
             conversation_data={
-                "version": request.version,
                 "scene": request.scene,
                 "scene_desc": request.scene_desc,
                 "name": request.name,

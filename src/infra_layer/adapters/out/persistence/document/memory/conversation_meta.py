@@ -36,9 +36,6 @@ class ConversationMeta(DocumentBase, AuditBase):
     Used for context management and memory retrieval in multi-turn conversations.
     """
 
-    # Version information
-    version: str = Field(..., description="Data version number, e.g.: 1.0.0")
-
     # Scene information
     scene: str = Field(
         ...,
@@ -90,7 +87,6 @@ class ConversationMeta(DocumentBase, AuditBase):
         # Example data
         json_schema_extra={
             "example": {
-                "version": "1.0.0",
                 "scene": "scene_a",
                 "scene_desc": {"description": "Scene description"},
                 "name": "User health consultation conversation",

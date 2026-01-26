@@ -36,7 +36,6 @@ from .retrieve_metrics import (
 from .memorize_metrics import (
     MEMORIZE_REQUESTS_TOTAL,
     MEMORIZE_DURATION_SECONDS,
-    MEMORIZE_STAGE_DURATION_SECONDS,
     MEMORIZE_MESSAGES_TOTAL,
     MEMORIZE_ERRORS_TOTAL,
     BOUNDARY_DETECTION_TOTAL,
@@ -45,6 +44,9 @@ from .memorize_metrics import (
     MEMORY_EXTRACTED_TOTAL,
     EXTRACT_MEMORY_REQUESTS_TOTAL,
     EXTRACT_MEMORY_DURATION_SECONDS,
+    # Utility functions
+    get_space_id_for_metrics,
+    get_raw_data_type_label,
 )
 
 __all__ = [
@@ -73,7 +75,6 @@ __all__ = [
     # Memorize metrics
     'MEMORIZE_REQUESTS_TOTAL',
     'MEMORIZE_DURATION_SECONDS',
-    'MEMORIZE_STAGE_DURATION_SECONDS',
     'MEMORIZE_MESSAGES_TOTAL',
     'MEMORIZE_ERRORS_TOTAL',
     

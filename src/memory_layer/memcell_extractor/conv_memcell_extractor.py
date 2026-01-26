@@ -29,6 +29,7 @@ from core.observation.logger import get_logger
 from agentic_layer.metrics.memorize_metrics import (
     record_boundary_detection,
     record_memcell_extracted,
+    get_space_id_for_metrics,
 )
 import time
 
@@ -326,6 +327,8 @@ class ConvMemCellExtractor(MemCellExtractor):
                     # Record success metrics
                     detection_result = 'should_end' if result.should_end else 'should_wait'
                     record_boundary_detection(
+                        space_id=get_space_id_for_metrics(),
+                        raw_data_type=self.raw_data_type.value,
                         result=detection_result,
                         trigger_type='llm',
                     )
@@ -448,10 +451,16 @@ class ConvMemCellExtractor(MemCellExtractor):
 
             # Record force split metrics
             record_boundary_detection(
+                space_id=get_space_id_for_metrics(),
+                raw_data_type=self.raw_data_type.value,
                 result='force_split',
                 trigger_type=trigger_type,
             )
-            record_memcell_extracted(trigger_type=trigger_type)
+            record_memcell_extracted(
+                space_id=get_space_id_for_metrics(),
+                raw_data_type=self.raw_data_type.value,
+                trigger_type=trigger_type,
+            )
 
             logger.debug(
                 f"✅ Force split MemCell created: event_id={memcell.event_id}, "
@@ -518,7 +527,11 @@ class ConvMemCellExtractor(MemCellExtractor):
             )
 
             # Record MemCell extraction metric
-            record_memcell_extracted(trigger_type='llm')
+            record_memcell_extracted(
+                space_id=get_space_id_for_metrics(),
+                raw_data_type=self.raw_data_type.value,
+                trigger_type='llm',
+            )
 
             logger.debug(
                 f"✅ Successfully created basic MemCell: event_id={memcell.event_id}, "

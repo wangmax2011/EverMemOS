@@ -35,6 +35,32 @@
 
 <br>
 
+
+![divider][divider-light]
+![divider][divider-dark]
+
+> [!NOTE]
+>
+> ## Memory Genesis Hackathon 2026
+> 
+> Join our AI Memory Hackathon! Build innovative applications, plugins, or infrastructure improvements powered by EverMemOS.
+> 
+> **Tracks:**
+> - **Agent + Memory** - Build intelligent agents with long-term, evolving memories
+> - **Platform Plugins** - Integrate EverMemOS with VSCode, Chrome, Slack, Notion, LangChain, and more
+> - **OS Infrastructure** - Optimize core functionality and performance
+> 
+> **[Get Started with the Hackathon Starter Kit](docs/STARTER_KIT.md)** 
+> 
+> Join our [Discord](https://discord.gg/gYep5nQRZJ
+) to find teammates and brainstorm ideas!
+> 
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
 <details open>
 <summary><kbd>Table of Contents</kbd></summary>
 
@@ -145,18 +171,7 @@ EverMemOS enables AI to not only remember what happened, but understand the mean
 
 <br>
 
-## Hackathon
 
-Join our AI Memory Hackathon! Build innovative applications, plugins, or infrastructure improvements powered by EverMemOS.
-
-**Tracks:**
-- **Agent + Memory** - Build intelligent agents with long-term, evolving memories
-- **Platform Plugins** - Integrate EverMemOS with VSCode, Chrome, Slack, Notion, LangChain, and more
-- **OS Infrastructure** - Optimize core functionality and performance
-
-👉 **[Get Started with the Hackathon Starter Kit](docs/STARTER_KIT.md)** 👈
-
-Join our [Discord](https://discord.gg/pfwwskxp) to find teammates and brainstorm ideas!
 
 <br>
 
@@ -202,7 +217,7 @@ curl http://localhost:8001/health
 
 ✅ Server running at `http://localhost:8001` • [Full Setup Guide](docs/installation/SETUP.md)
 
----
+<br>
 
 ## Basic Usage
 
@@ -238,7 +253,7 @@ for memory_group in result.get("memories", []):
 
 📖 [More Examples](docs/usage/USAGE_EXAMPLES.md) • 📚 [API Reference](docs/api_docs/memory_api.md) • 🎯 [Interactive Demos](docs/usage/DEMOS.md)
 
----
+<br>
 
 ## Advanced Techniques
 

@@ -35,13 +35,9 @@
 
 <br>
 
-
-![divider][divider-light]
-![divider][divider-dark]
-
 > [!NOTE]
 >
-> ## Memory Genesis Hackathon 2026
+> *** Memory Genesis Hackathon 2026
 > 
 > Join our AI Memory Hackathon! Build innovative applications, plugins, or infrastructure improvements powered by EverMemOS.
 > 
@@ -171,10 +167,6 @@ EverMemOS enables AI to not only remember what happened, but understand the mean
 
 <br>
 
-
-
-<br>
-
 ## Quick Start
 
 ### Prerequisites
@@ -262,7 +254,7 @@ for memory_group in result.get("memories", []):
 - **[Memory Retrieval Strategies](docs/advanced/RETRIEVAL_STRATEGIES.md)** - Lightweight vs Agentic retrieval modes
 - **[Batch Operations](docs/usage/BATCH_OPERATIONS.md)** - Process multiple messages efficiently
 
----
+<br>
 
 ## Evaluation & Benchmarking
 
@@ -298,7 +290,7 @@ cat evaluation/results/locomo-evermemos/report.txt
 
 📊 [Full Evaluation Guide](evaluation/README.md) • 📈 [Complete Results](https://huggingface.co/datasets/EverMind-AI/EverMemOS_Eval_Results)
 
----
+<br>
 
 <!-- ## Hackathon
 

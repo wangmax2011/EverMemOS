@@ -91,6 +91,7 @@ Welcome to EverMemOS! Join our community to help improve the project and collabo
 | [![X][x-badge]][x] | Follow updates on X |
 | [![LinkedIn][linkedin-badge]][linkedin] | Connect with us on LinkedIn |
 | [![Reddit][reddit-badge]][reddit] | Join the Reddit community |
+| [![WeChat][wechat-badge]][wechat] | Join the WeChat discussion group (for Chinese only) |
 
 
 <br>
@@ -480,6 +481,7 @@ Read our [Contribution Guidelines](CONTRIBUTING.md) for code standards and Git w
 <!-- Q&A Badges -->
 [deepwiki-badge]: https://deepwiki.com/badge.svg
 [readmex-badge]: https://raw.githubusercontent.com/CodePhiliaX/resource-trusteeship/main/readmex.svg
+[wechat-badge]: https://img.shields.io/badge/WeChat-EverMemOS-07C160?style=flat&logo=wechat&logoColor=white
 
 <!-- Misc Badges -->
 [back-to-top]: https://img.shields.io/badge/-Back_to_top-gray?style=flat-square
@@ -511,6 +513,7 @@ Read our [Contribution Guidelines](CONTRIBUTING.md) for code standards and Git w
 [x]: https://x.com/EverMindAI
 [linkedin]: https://www.linkedin.com/company/ai-evermind
 [reddit]: https://www.reddit.com/r/EverMindAI/
+[wechat]: https://github.com/EverMind-AI/EverMemOS/discussions/67
 
 <!-- Q&A Links -->
 [deepwiki]: https://deepwiki.com/EverMind-AI/EverMemOS

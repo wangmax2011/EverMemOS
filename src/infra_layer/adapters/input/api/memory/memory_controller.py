@@ -12,8 +12,10 @@ Provides RESTful API routes for:
 import json
 import logging
 import time
+import uuid
 from contextlib import suppress
-from typing import Any, Dict
+from datetime import datetime
+from typing import Any, Dict, List
 from fastapi import HTTPException, Request as FastAPIRequest
 
 from core.di.decorators import controller
@@ -57,7 +59,10 @@ from core.component.redis_provider import RedisProvider
 from service.memory_request_log_service import MemoryRequestLogService
 from service.memcell_delete_service import MemCellDeleteService
 from service.conversation_meta_service import ConversationMetaService
-from api_specs.memory_types import RawDataType
+from infra_layer.adapters.out.persistence.repository.memcell_raw_repository import MemCellRawRepository
+from infra_layer.adapters.out.persistence.repository.episodic_memory_raw_repository import EpisodicMemoryRawRepository
+from api_specs.memory_types import EpisodeMemory
+from api_specs.memory_types import RawDataType, MemoryType, MemCell
 from agentic_layer.metrics.memorize_metrics import (
     record_memorize_request,
     record_memorize_error,
@@ -66,6 +71,8 @@ from agentic_layer.metrics.memorize_metrics import (
     get_space_id_for_metrics,
     get_raw_data_type_label,
 )
+from memory_layer.llm.llm_provider import LLMProvider
+from memory_layer.memcell_extractor.conv_memcell_extractor import ConvMemCellExtractor, ConversationMemCellExtractRequest
 
 logger = logging.getLogger(__name__)
 
@@ -321,6 +328,148 @@ class MemoryController(BaseController):
             raise HTTPException(
                 status_code=500, detail="Failed to store memory, please try again later"
             ) from e
+
+    @post(
+        "/immediate",
+        response_model=MemorizeResponse,
+        summary="Immediately extract memory (force extraction without boundary detection)",
+        description="""
+        Immediately extract a memory from the provided content without waiting for boundary detection.
+        This endpoint is designed for explicit "remember this" commands where the user wants to
+        force-save important information immediately.
+
+        ## Fields:
+        - **content** (required): The content to remember
+        - **message_id** (required): Unique identifier for the message
+        - **create_time** (required): Message creation time (ISO 8601 format)
+        - **sender** (required): Sender user ID
+        - **group_id** (optional): Group ID
+        - **group_name** (optional): Group name
+        - **sender_name** (optional): Sender display name
+        - **role** (optional): Sender role ("user" or "assistant")
+
+        ## Functionality:
+        - Bypasses normal boundary detection
+        - Immediately creates a MemCell and extracts episodes
+        - Returns extracted memories synchronously
+        """,
+    )
+    async def immediate_extract_memory(
+        self,
+        request: FastAPIRequest,
+    ) -> MemorizeResponse:
+        """
+        Immediately extract memory without boundary detection
+
+        This endpoint is used for explicit "remember this" commands where the user
+        wants to force-save important information immediately, bypassing the normal
+        boundary detection process.
+        """
+        start_time = time.perf_counter()
+        space_id = get_space_id_for_metrics()
+
+        try:
+            # Get request body
+            message_data = await request.json()
+            logger.info("Received immediate memory extraction request")
+
+            # Validate required fields
+            content = message_data.get("content")
+            if not content:
+                raise HTTPException(status_code=400, detail="content is required")
+
+            # Create a MemCell directly from the content (skip boundary detection)
+            memcell = MemCell(
+                user_id_list=[message_data.get("sender", "unknown")],
+                original_data=[{
+                    "content": content,
+                    "sender": message_data.get("sender", "unknown"),
+                    "sender_name": message_data.get("sender_name", "User"),
+                    "role": message_data.get("role", "user"),
+                    "create_time": message_data.get("create_time") or datetime.now().isoformat(),
+                    "message_id": message_data.get("message_id") or str(uuid.uuid4()),
+                }],
+                timestamp=datetime.now(),
+                summary=content[:200] if len(content) > 200 else content,
+                group_id=message_data.get("group_id"),
+                participants=[message_data.get("sender", "unknown")],
+                type=RawDataType.CONVERSATION,
+            )
+
+            # Save the MemCell
+            memcell_repo = get_bean_by_type(MemCellRawRepository)
+            await memcell_repo.save(memcell)
+
+            logger.info(f"Created MemCell for immediate extraction: {memcell.event_id}")
+
+            # Extract episode memory immediately
+            memory_manager = MemoryManager()
+
+            # Use the existing extract_memory method
+            memory_count = 0
+            try:
+                # Extract group episode
+                episode_memories = await memory_manager.extract_memory(
+                    memcell=memcell,
+                    memory_type=MemoryType.EPISODIC_MEMORY,
+                    user_id=None,  # Group memory
+                    group_id=message_data.get("group_id"),
+                    group_name=message_data.get("group_name"),
+                )
+
+                if episode_memories:
+                    memory_count = len(episode_memories) if isinstance(episode_memories, list) else 1
+                    logger.info(f"Extracted {memory_count} episode memories immediately")
+
+                    # Save extracted memories
+                    if isinstance(episode_memories, list):
+                        for memory in episode_memories:
+                            if isinstance(memory, EpisodeMemory):
+                                await self._save_episodic_memory(memory)
+                    elif isinstance(episode_memories, EpisodeMemory):
+                        await self._save_episodic_memory(episode_memories)
+
+            except Exception as extract_error:
+                logger.error(f"Error during immediate extraction: {extract_error}")
+                # Still return success since we saved the MemCell
+
+            # Record metrics
+            record_memorize_request(
+                space_id=space_id,
+                raw_data_type='conversation',
+                status='extracted',
+                duration_seconds=time.perf_counter() - start_time,
+            )
+
+            return {
+                "status": ErrorStatus.OK.value,
+                "message": f"Immediately extracted {memory_count} memories",
+                "result": {
+                    "saved_memories": [],
+                    "count": memory_count,
+                    "status_info": "immediately_extracted",
+                    "memcell_id": str(memcell.event_id),
+                },
+            }
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Immediate extraction failed: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to extract memory immediately: {str(e)}"
+            ) from e
+
+    async def _save_episodic_memory(self, memory: EpisodeMemory):
+        """Helper method to save episodic memory to repositories"""
+        try:
+            # Save to MongoDB
+            repo = get_bean_by_type(EpisodicMemoryRawRepository)
+            await repo.save(memory)
+            logger.debug(f"Saved episodic memory: {memory.id}")
+        except Exception as e:
+            logger.error(f"Failed to save episodic memory: {e}")
 
     @get(
         "",

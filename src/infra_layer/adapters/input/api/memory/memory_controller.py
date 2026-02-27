@@ -62,6 +62,8 @@ from service.conversation_meta_service import ConversationMetaService
 from infra_layer.adapters.out.persistence.repository.memcell_raw_repository import MemCellRawRepository
 from infra_layer.adapters.out.persistence.repository.episodic_memory_raw_repository import EpisodicMemoryRawRepository
 from infra_layer.adapters.out.persistence.document.memory.episodic_memory import EpisodicMemory
+from infra_layer.adapters.out.search.repository.episodic_memory_es_repository import EpisodicMemoryEsRepository
+from infra_layer.adapters.out.search.repository.episodic_memory_milvus_repository import EpisodicMemoryMilvusRepository
 from api_specs.memory_types import MemoryType
 from api_specs.memory_types import RawDataType, MemCell
 from agentic_layer.metrics.memorize_metrics import (
@@ -74,6 +76,7 @@ from agentic_layer.metrics.memorize_metrics import (
 )
 from memory_layer.llm.llm_provider import LLMProvider
 from memory_layer.memcell_extractor.conv_memcell_extractor import ConvMemCellExtractor, ConversationMemCellExtractRequest
+from agentic_layer.vectorize_service import get_vectorize_service
 
 logger = logging.getLogger(__name__)
 
@@ -384,6 +387,21 @@ class MemoryController(BaseController):
 
             # Create EpisodicMemory directly from the content (skip MemCell creation for simplicity)
             memory_count = 0
+            vector = None
+            vector_model = None
+
+            # Generate vector for the content (enables hybrid search)
+            try:
+                vectorize_service = get_vectorize_service()
+                vector = await vectorize_service.get_embedding(content)
+                if vector is not None:
+                    vector = vector.tolist() if hasattr(vector, 'tolist') else vector
+                    vector_model = getattr(vectorize_service, 'model', 'unknown')
+                    logger.info(f"Generated vector for immediate memory: {len(vector)} dimensions")
+            except Exception as vec_error:
+                logger.warning(f"Failed to generate vector for immediate memory: {vec_error}")
+                # Continue without vector - keyword search will still work
+
             try:
                 episode_memory = EpisodicMemory(
                     user_id=message_data.get("sender", "unknown"),
@@ -395,6 +413,8 @@ class MemoryController(BaseController):
                     summary=content[:200] if len(content) > 200 else content,
                     episode=content,
                     memcell_event_id_list=[event_id],
+                    vector=vector,
+                    vector_model=vector_model,
                 )
 
                 # Save the episode memory
@@ -434,12 +454,70 @@ class MemoryController(BaseController):
             ) from e
 
     async def _save_episodic_memory(self, memory):
-        """Helper method to save episodic memory to repositories"""
+        """Helper method to save episodic memory to repositories (MongoDB + Elasticsearch + Milvus)"""
         try:
             # Save to MongoDB
             repo = get_bean_by_type(EpisodicMemoryRawRepository)
             await repo.append_episodic_memory(memory)
-            logger.debug(f"Saved episodic memory: {memory.id}")
+            logger.debug(f"Saved episodic memory to MongoDB: {memory.id}")
+
+            # Also save to Elasticsearch for keyword search functionality
+            try:
+                es_repo = get_bean_by_type(EpisodicMemoryEsRepository)
+                await es_repo.append_episodic_memory(
+                    event_id=str(memory.id),
+                    user_id=memory.user_id,
+                    timestamp=memory.timestamp,
+                    episode=memory.episode,
+                    search_content=[memory.episode, memory.summary, memory.subject] if memory.episode else [],
+                    user_name=memory.user_name,
+                    title=memory.subject,
+                    summary=memory.summary,
+                    group_id=memory.group_id,
+                    participants=memory.participants,
+                    event_type=memory.type,
+                    keywords=memory.keywords,
+                    linked_entities=memory.linked_entities,
+                    subject=memory.subject,
+                    memcell_event_id_list=memory.memcell_event_id_list,
+                    parent_type=memory.parent_type,
+                    parent_id=memory.parent_id,
+                    extend=memory.extend,
+                    created_at=memory.created_at,
+                    updated_at=memory.updated_at,
+                )
+                logger.debug(f"Saved episodic memory to Elasticsearch: {memory.id}")
+            except Exception as es_error:
+                logger.warning(f"Failed to save to Elasticsearch (non-critical): {es_error}")
+
+            # Also save to Milvus for vector search functionality (if vector exists)
+            if memory.vector:
+                try:
+                    milvus_repo = get_bean_by_type(EpisodicMemoryMilvusRepository)
+                    await milvus_repo.create_and_save_episodic_memory(
+                        id=str(memory.id),
+                        user_id=memory.user_id,
+                        timestamp=memory.timestamp,
+                        episode=memory.episode,
+                        search_content=[memory.episode, memory.summary, memory.subject] if memory.episode else [],
+                        vector=memory.vector,
+                        user_name=memory.user_name,
+                        title=memory.subject,
+                        summary=memory.summary,
+                        group_id=memory.group_id,
+                        participants=memory.participants,
+                        event_type=memory.type,
+                        keywords=memory.keywords,
+                        linked_entities=memory.linked_entities,
+                        subject=memory.subject,
+                        memcell_event_id_list=memory.memcell_event_id_list,
+                        extend=memory.extend,
+                        created_at=memory.created_at,
+                        updated_at=memory.updated_at,
+                    )
+                    logger.debug(f"Saved episodic memory to Milvus: {memory.id}")
+                except Exception as milvus_error:
+                    logger.warning(f"Failed to save to Milvus (non-critical): {milvus_error}")
         except Exception as e:
             logger.error(f"Failed to save episodic memory: {e}")
 

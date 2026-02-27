@@ -61,7 +61,8 @@ from service.memcell_delete_service import MemCellDeleteService
 from service.conversation_meta_service import ConversationMetaService
 from infra_layer.adapters.out.persistence.repository.memcell_raw_repository import MemCellRawRepository
 from infra_layer.adapters.out.persistence.repository.episodic_memory_raw_repository import EpisodicMemoryRawRepository
-from api_specs.memory_types import EpisodeMemory, MemoryType
+from infra_layer.adapters.out.persistence.document.memory.episodic_memory import EpisodicMemory
+from api_specs.memory_types import MemoryType
 from api_specs.memory_types import RawDataType, MemCell
 from agentic_layer.metrics.memorize_metrics import (
     record_memorize_request,
@@ -381,21 +382,19 @@ class MemoryController(BaseController):
             # Generate a unique event ID for this immediate memory
             event_id = str(uuid.uuid4())
 
-            # Create EpisodeMemory directly from the content (skip MemCell creation for simplicity)
+            # Create EpisodicMemory directly from the content (skip MemCell creation for simplicity)
             memory_count = 0
             try:
-                episode_memory = EpisodeMemory(
-                    memory_type=MemoryType.EPISODIC_MEMORY,
+                episode_memory = EpisodicMemory(
                     user_id=message_data.get("sender", "unknown"),
                     timestamp=datetime.now(),
-                    ori_event_id_list=[event_id],
-                    id=event_id,
                     group_id=message_data.get("group_id"),
                     group_name=message_data.get("group_name", "Claude Code Session"),
                     participants=[message_data.get("sender", "unknown")],
                     subject=content[:100] + "..." if len(content) > 100 else content,
                     summary=content[:200] if len(content) > 200 else content,
                     episode=content,
+                    memcell_event_id_list=[event_id],
                 )
 
                 # Save the episode memory
@@ -434,7 +433,7 @@ class MemoryController(BaseController):
                 detail=f"Failed to extract memory immediately: {str(e)}"
             ) from e
 
-    async def _save_episodic_memory(self, memory: EpisodeMemory):
+    async def _save_episodic_memory(self, memory):
         """Helper method to save episodic memory to repositories"""
         try:
             # Save to MongoDB

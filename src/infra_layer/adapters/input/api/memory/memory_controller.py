@@ -385,16 +385,17 @@ class MemoryController(BaseController):
             memory_count = 0
             try:
                 episode_memory = EpisodeMemory(
+                    memory_type=MemoryType.EPISODIC_MEMORY,
                     user_id=message_data.get("sender", "unknown"),
+                    timestamp=datetime.now(),
+                    ori_event_id_list=[event_id],
+                    id=event_id,
                     group_id=message_data.get("group_id"),
                     group_name=message_data.get("group_name", "Claude Code Session"),
+                    participants=[message_data.get("sender", "unknown")],
                     subject=content[:100] + "..." if len(content) > 100 else content,
                     summary=content[:200] if len(content) > 200 else content,
                     episode=content,
-                    memory_type=MemoryType.EPISODIC_MEMORY,
-                    event_id=event_id,
-                    timestamp=datetime.now(),
-                    participants=[message_data.get("sender", "unknown")],
                 )
 
                 # Save the episode memory

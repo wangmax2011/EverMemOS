@@ -61,8 +61,8 @@ from service.memcell_delete_service import MemCellDeleteService
 from service.conversation_meta_service import ConversationMetaService
 from infra_layer.adapters.out.persistence.repository.memcell_raw_repository import MemCellRawRepository
 from infra_layer.adapters.out.persistence.repository.episodic_memory_raw_repository import EpisodicMemoryRawRepository
-from api_specs.memory_types import EpisodeMemory
-from api_specs.memory_types import RawDataType, MemoryType, MemCell
+from api_specs.memory_types import EpisodeMemory, MemoryType
+from api_specs.memory_types import RawDataType, MemCell
 from agentic_layer.metrics.memorize_metrics import (
     record_memorize_request,
     record_memorize_error,
@@ -402,35 +402,29 @@ class MemoryController(BaseController):
 
             logger.info(f"Created MemCell for immediate extraction: {memcell.event_id}")
 
-            # Extract episode memory immediately
-            memory_manager = MemoryManager()
-
-            # Use the existing extract_memory method
+            # Create EpisodeMemory directly from the content
             memory_count = 0
             try:
-                # Extract group episode
-                episode_memories = await memory_manager.extract_memory(
-                    memcell=memcell,
-                    memory_type=MemoryType.EPISODIC_MEMORY,
-                    user_id=None,  # Group memory
+                episode_memory = EpisodeMemory(
+                    user_id=message_data.get("sender", "unknown"),
                     group_id=message_data.get("group_id"),
-                    group_name=message_data.get("group_name"),
+                    group_name=message_data.get("group_name", "Claude Code Session"),
+                    subject=content[:100] + "..." if len(content) > 100 else content,
+                    summary=content[:200] if len(content) > 200 else content,
+                    episode=content,
+                    memory_type=MemoryType.EPISODIC_MEMORY,
+                    event_id=memcell.event_id,
+                    timestamp=datetime.now(),
+                    participants=[message_data.get("sender", "unknown")],
                 )
 
-                if episode_memories:
-                    memory_count = len(episode_memories) if isinstance(episode_memories, list) else 1
-                    logger.info(f"Extracted {memory_count} episode memories immediately")
-
-                    # Save extracted memories
-                    if isinstance(episode_memories, list):
-                        for memory in episode_memories:
-                            if isinstance(memory, EpisodeMemory):
-                                await self._save_episodic_memory(memory)
-                    elif isinstance(episode_memories, EpisodeMemory):
-                        await self._save_episodic_memory(episode_memories)
+                # Save the episode memory
+                await self._save_episodic_memory(episode_memory)
+                memory_count = 1
+                logger.info(f"Created and saved EpisodeMemory: {episode_memory.id}")
 
             except Exception as extract_error:
-                logger.error(f"Error during immediate extraction: {extract_error}")
+                logger.error(f"Error creating immediate episode: {extract_error}")
                 # Still return success since we saved the MemCell
 
             # Record metrics

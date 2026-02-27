@@ -398,7 +398,7 @@ class MemoryController(BaseController):
 
             # Save the MemCell
             memcell_repo = get_bean_by_type(MemCellRawRepository)
-            await memcell_repo.save(memcell)
+            await memcell_repo.append_memcell(memcell)
 
             logger.info(f"Created MemCell for immediate extraction: {memcell.event_id}")
 
@@ -466,7 +466,7 @@ class MemoryController(BaseController):
         try:
             # Save to MongoDB
             repo = get_bean_by_type(EpisodicMemoryRawRepository)
-            await repo.save(memory)
+            await repo.append_episodic_memory(memory)
             logger.debug(f"Saved episodic memory: {memory.id}")
         except Exception as e:
             logger.error(f"Failed to save episodic memory: {e}")

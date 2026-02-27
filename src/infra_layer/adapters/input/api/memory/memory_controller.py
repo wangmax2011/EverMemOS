@@ -378,31 +378,10 @@ class MemoryController(BaseController):
             if not content:
                 raise HTTPException(status_code=400, detail="content is required")
 
-            # Create a MemCell directly from the content (skip boundary detection)
-            memcell = MemCell(
-                user_id_list=[message_data.get("sender", "unknown")],
-                original_data=[{
-                    "content": content,
-                    "sender": message_data.get("sender", "unknown"),
-                    "sender_name": message_data.get("sender_name", "User"),
-                    "role": message_data.get("role", "user"),
-                    "create_time": message_data.get("create_time") or datetime.now().isoformat(),
-                    "message_id": message_data.get("message_id") or str(uuid.uuid4()),
-                }],
-                timestamp=datetime.now(),
-                summary=content[:200] if len(content) > 200 else content,
-                group_id=message_data.get("group_id"),
-                participants=[message_data.get("sender", "unknown")],
-                type=RawDataType.CONVERSATION,
-            )
+            # Generate a unique event ID for this immediate memory
+            event_id = str(uuid.uuid4())
 
-            # Save the MemCell
-            memcell_repo = get_bean_by_type(MemCellRawRepository)
-            await memcell_repo.append_memcell(memcell)
-
-            logger.info(f"Created MemCell for immediate extraction: {memcell.event_id}")
-
-            # Create EpisodeMemory directly from the content
+            # Create EpisodeMemory directly from the content (skip MemCell creation for simplicity)
             memory_count = 0
             try:
                 episode_memory = EpisodeMemory(
@@ -413,7 +392,7 @@ class MemoryController(BaseController):
                     summary=content[:200] if len(content) > 200 else content,
                     episode=content,
                     memory_type=MemoryType.EPISODIC_MEMORY,
-                    event_id=memcell.event_id,
+                    event_id=event_id,
                     timestamp=datetime.now(),
                     participants=[message_data.get("sender", "unknown")],
                 )
@@ -425,7 +404,6 @@ class MemoryController(BaseController):
 
             except Exception as extract_error:
                 logger.error(f"Error creating immediate episode: {extract_error}")
-                # Still return success since we saved the MemCell
 
             # Record metrics
             record_memorize_request(
@@ -442,7 +420,7 @@ class MemoryController(BaseController):
                     "saved_memories": [],
                     "count": memory_count,
                     "status_info": "immediately_extracted",
-                    "memcell_id": str(memcell.event_id),
+                    "event_id": str(event_id),
                 },
             }
 
